@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Yoele's Trading Assistant</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0b0b0b; color: #e0e0e0; margin: 0; padding: 20px; }
+    h1 { color: #00ff88; font-size: 24px; text-align: center; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 16px; }
+    th, td { padding: 12px; text-align: center; border-bottom: 1px solid #333; }
+    th { background-color: #1a1a1a; color: #00ff88; }
+    tr:hover { background-color: #222; }
+    .positive { color: #00ff88; font-weight: bold; }
+    .negative { color: #ff5555; font-weight: bold; }
+    .section { margin-top: 30px; }
+    .section h2 { font-size: 20px; color: #00ccff; }
+    .section p, .section ul { font-size: 14px; line-height: 1.6; }
+    button { background-color: #00ccff; border: none; color: #000; padding: 6px 12px; cursor: pointer; font-weight: bold; }
+    button:hover { background-color: #00aacc; }
+    #chartContainer { background: #111; padding: 20px; margin-top: 30px; border-radius: 10px; }
+    #ai-helper { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; padding: 10px; border-radius: 10px; border: 1px solid #00ccff; max-width: 300px; }
+    #ai-helper p { font-size: 12px; }
+    .arrow { animation: blink 1s infinite; color: #00ff88; font-weight: bold; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+  <h1>📊 Yoele's Private Live Market Tracker</h1>
+
+  <div class="section">
+    <h2>Why Constant Market Scanning Matters</h2>
+    <p>Monitoring and analyzing the external environment helps identify changes, trends, opportunities, and potential threats. This practice is crucial for building long-term strategies and staying competitive.</p>
+    <ul>
+      <li><strong>Understand the target market:</strong> Tailor services based on customer needs and trends.</li>
+      <li><strong>Analyze competitors:</strong> Know their strengths, weaknesses, and moves.</li>
+      <li><strong>Monitor trends:</strong> Spot shifts in tech, economy, or society before others.</li>
+      <li><strong>Identify opportunities:</strong> Discover new markets, partnerships, or products early.</li>
+      <li><strong>Adapt strategies:</strong> Adjust with real-time data, not assumptions.</li>
+    </ul>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>Price</th>
+        <th>24h Change</th>
+        <th>Trade</th>
+      </tr>
+    </thead>
+    <tbody id="market-table">
+      <!-- Populated dynamically -->
+    </tbody>
+  </table>
+
+  <div id="chartContainer">
+    <canvas id="priceChart" width="800" height="300"></canvas>
+  </div>
+
+  <div id="ai-helper">
+    <p><strong>Yoele Assistant 🤖:</strong></p>
+    <p>Click the <span class="arrow">"Buy"</span> button to simulate a trade. Hover on assets for trend insights. Need help? Just follow the arrows 🟢</p>
+  </div>
+
+  <script>
+    let chart;
+
+    async function fetchMarketData() {
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=percent_change_24h_desc&per_page=10&page=1&sparkline=false");
+        const data = await res.json();
+
+        const table = document.getElementById("market-table");
+        table.innerHTML = "";
+
+        const labels = [];
+        const prices = [];
+
+        data.forEach(coin => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${coin.name}</td>
+            <td>$${coin.current_price.toLocaleString()}</td>
+            <td class="${coin.price_change_percentage_24h >= 0 ? 'positive' : 'negative'}">
+              ${coin.price_change_percentage_24h.toFixed(2)}%
+            </td>
+            <td><button onclick="simulateTrade('${coin.name}', ${coin.current_price})">Buy</button></td>
+          `;
+          table.appendChild(row);
+
+          labels.push(coin.symbol.toUpperCase());
+          prices.push(coin.current_price);
+        });
+
+        updateChart(labels, prices);
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
+
+    function simulateTrade(assetName, price) {
+      const amount = 100;
+      const shares = amount / price;
+      alert(`Simulated Buy: ${shares.toFixed(4)} shares of ${assetName} at $${price}`);
+    }
+
+    function updateChart(labels, prices) {
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Current Price (USD)',
+            data: prices,
+            backgroundColor: '#00ccff',
+            borderRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { labels: { color: '#e0e0e0' } }
+          },
+          scales: {
+            x: { ticks: { color: '#e0e0e0' } },
+            y: { ticks: { color: '#e0e0e0' } }
+          }
+        }
+      });
+    }
+
+    fetchMarketData();
+    setInterval(fetchMarketData, 10000); // update every 10 seconds
+  </script>
+</body>
+</html>
